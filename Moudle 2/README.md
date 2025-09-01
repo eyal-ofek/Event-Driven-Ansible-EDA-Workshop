@@ -53,19 +53,18 @@ A well-organized Git repository is crucial for a scalable and maintainable autom
         ```bash
         mkdir -p extensions/eda/k8s-objects
         mkdir -p extensions/eda/playbooks
+        mkdir -p extensions/eda/playbooks/{templates,vars}
         mkdir -p extensions/eda/rulebooks
-        mkdir -p templates
-        mkdir -p vars
         ```
 
 2.  **Create the environment variable files:**
-    * Using your text editor, create a new file at `vars/prd.yml` and add the following content, replacing the values with your **production** cluster details:
+    * Using your text editor, create a new file at `extensions/eda/playbooks/vars/prd.yml` and add the following content, replacing the values with your **production** cluster details:
         ```yaml
         ---
         openshift_api: "{{ lookup('env', 'PRD_OCP_API') }}"
         openshift_token: "{{ lookup('env', 'PRD_OCP_AUTH_TOKEN') }}"
         ```
-    * Create another file at `vars/dev.yml` with your **development** cluster details:
+    * Create another file at `extensions/eda/playbooks/vars/dev.yml` with your **development** cluster details:
         ```yaml
         ---
         openshift_api: "{{ lookup('env', 'DEV_OCP_API') }}"
@@ -91,7 +90,7 @@ A well-organized Git repository is crucial for a scalable and maintainable autom
         ```
     4.  **Generate a Token for the Service Account**:
         ```bash
-        oc create token aap-eda-sa -n openshift-monitoring --duration=$((365*24))
+        TOKEN=$(oc create token aap-eda-sa -n openshift-monitoring --duration=$((365*24))h)
         ```
     The output is a `sha256~...` token. Copy it and save it in a file for a later use in the next moudle.
     
@@ -148,7 +147,7 @@ A well-organized Git repository is crucial for a scalable and maintainable autom
         * **For production scenarios**, refer to the real-world PrometheusRules and monitoring jobs described in the **Appendix** section below
 
 5.  **Create the Rebooter Pod Template:**
-    * Create a new file at `templates/reboot_node_pod.yaml.j2` and add the following content:
+    * Create a new file at `extensions/eda/playbooks/templates/reboot_node_pod.yaml.j2` and add the following content:
         ```yaml
         apiVersion: v1
         kind: Pod
@@ -268,7 +267,7 @@ For this workshop, we'll use a **pre-built decision environment** that Red Hat p
           when: payload.labels is defined and item in payload.labels
    
         - name: "Include vars file for the target environment"
-          include_vars: ../../vars/{{ payload.labels.env }}.yml
+          include_vars: "{{ payload.labels.env }}.yml"
    
       tasks:
         - name: "Log in to the correct OpenShift cluster"

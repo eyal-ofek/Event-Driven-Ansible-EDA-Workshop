@@ -17,7 +17,7 @@
     ```
 2.  **Apply the ConfigMap to your cluster:**
     ```bash
-    oc apply -f extentions/eda/k8s-objects/cluster-monitoring-config.yml
+    oc apply -f extensions/eda/k8s-objects/cluster-monitoring-config.yml
     ```
 
 ### 4.2 Exercise: Configuring OpenShift Alertmanager
@@ -27,16 +27,26 @@
      ```yaml
      ...
      receivers:
+     - name: Critical
+     - name: Default
+     - name: Watchdog
      - name: EDA
        webhook_configs:
-       - url: "https://<echo $ROUTE>/alerts"
-         send_resolved: false
-     ...
+         - url: >-
+             https://<echo $ROUTE>/alerts
+           send_resolved: false
      route:
+       ...
        routes:
-         - reciever: EDA
-           match_re:
-             severity: custom
+         - matchers:
+             - alertname = Watchdog
+           receiver: Watchdog
+         - matchers:
+             - severity = critical
+           receiver: Critical
+         - receiver: EDA
+           matchers:
+             - severity=~custom
            continue: true
      ```
 
