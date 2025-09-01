@@ -1,0 +1,31 @@
+---
+- name: "Playbook reacting to alerts nfs-stale OR node-health-check"
+  hosts: localhost
+  gather_facts: false
+  vars_prompt:
+    - name: payload
+      prompt: ""
+      private: false
+
+  pre_tasks:
+    - name: Set fact node_name based on existing label from alert
+      set_fact:
+        problematic_node: "{{ payload.labels[item] }}"
+      loop:
+        - node
+        - instance
+      when: payload.labels is defined and item in payload.labels
+
+    - name: "Include vars file for the target environment"
+      include_vars: ../../vars/{{ payload.labels.env }}.yml
+
+  tasks:
+    - name: "Log in to the correct OpenShift cluster"
+      shell: "oc login --insecure-skip-tls-verify=true --token={{ openshift_token }} --server={{ openshift_api }}"
+
+##### Just for the workshop
+    - name: "Delete Gitea pod only"
+      shell: "oc -n gitea delete $(oc get po -n gitea -l app=gitea --no-headers -o name)"
+
+    - name: "Print alert label"
+      shell: "echo {{ problematic_node }}"
